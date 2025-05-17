@@ -1,0 +1,77 @@
+@startuml
+left to right direction
+
+rectangle "Процесс регистрации пациентов DFD" as Registration #lightblue {
+    actor "Пациент" as Patient3
+    rectangle "Сотрудник ресепшена" as Receptionist3
+    database "Excel файл всех пациентов (Шифрование)" as ListPatients3
+    rectangle "Файловая система (Шифрование, Маскирование)" as FileSystem3 #lightyellow
+
+    Patient3 --> Receptionist3 : Предоставляет информацию
+    Receptionist3 --> ListPatients3 : Сохраняет данные пациента (Контроль доступа, шифрование)
+    Receptionist3 --> FileSystem3 : Создает\обновляет файлы пациента (Контроль доступа, шифрование)
+}
+
+rectangle "Процесс записи пациентов DFD" as RegistrationToDoctor #lightblue {
+    actor "Пациент" as Patient
+    rectangle "Сотрудник ресепшена" as Receptionist
+    database "Excel файлы записей пациентов к докторам (Контроль доступа, Шифрование)" as PatientToDoctor
+    rectangle "Файловая система (Шифрование, Маскирование)" as FileSystem #lightyellow
+
+    Patient --> Receptionist : Предоставляет информацию
+    Receptionist --> FileSystem : Создает\обновляет файлы пациента (Контроль доступа, шифрование)
+    Receptionist --> PatientToDoctor : Обновляет записи пациентов к докторам (Контроль доступа, шифрование)
+}
+
+
+rectangle "Процесс оплаты услуг DFD" as PaymentProcess #lightblue {
+    actor "Пациент" as Patient2
+    actor "Бухгалтер>" as Accountant2
+    rectangle "Кассир" as Cashier
+    rectangle "Кассовая машина" as CashRegister #lightyellow
+    database "1C Бухгалтерия (Контроль доступа)" as PaymentDB
+
+    Patient2 --> Cashier : Предоставляет оплату
+    Cashier --> CashRegister : Вводит данные оплаты (Шифрование)
+    CashRegister --> PaymentDB : Сохраняет информацию об оплате (Шифрование, Контроль доступа)
+    Accountant2 --> PaymentDB : Процессинг платежей (Контроль доступа)
+}
+
+
+
+rectangle "Процесс получения анализов DFD" as ResultsProcess #lightblue {
+    actor "Пациент" as Patient4
+    rectangle "Ресепшен" as Receptionist4
+    database "Реестр лаборатории (Обезличивание)" as LabRegistry4
+    rectangle "Анализы пациента" as PatientResults4 #lightyellow
+
+    Patient4 --> Receptionist4 : Запрашивает анализы (Валидация)
+    Receptionist4 --> LabRegistry4 : Запрашивает анализы пациента (Шифрование)
+    LabRegistry4 --> Receptionist4 : Предоставляет анализы (Шифрование)
+    Receptionist4 --> Patient4 : Выдает анализы
+}
+
+
+rectangle "Процесс работы доктора с записями DFD" as RecordsProcess #lightblue {
+    actor "Врач" as Doctor
+    rectangle "Excel файлы записей пациентов к докторам" as RecordsFile #lightyellow
+
+    Doctor --> RecordsFile : Открывает файл для просмотра\редактирования (Контроль доступа, Шифрование)
+}
+
+
+rectangle "Процессинг складского учета DFD" as PaymentProcessing #lightblue {
+    actor "Бухгалтер" as Accountant
+    actor "Сотрудник склада" as WarehouseKeeper
+    rectangle "1C Бухгалтерия (Шифрование, Контроль доступа)" as OneC
+    rectangle "1С Торговля и Склад (Шифрование, Контроль доступа)" as TradeAndWarehouse #lightyellow
+
+    Accountant --> OneC : Проводит процессинг платежей (Контроль доступа)
+    OneC <--> TradeAndWarehouse : Обменивается данными (Шифрование)
+    WarehouseKeeper --> TradeAndWarehouse : Учет ТМЦ (Контроль доступа)
+}
+
+@enduml
+
+
+
