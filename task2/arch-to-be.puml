@@ -1,0 +1,118 @@
+@startuml
+top to bottom direction
+!includeurl https://raw.githubusercontent.com/RicardoNiepel/C4-PlantUML/master/C4_Container.puml
+
+' Блок комментариев о хранении данных
+'
+' Данные хранятся в реляционных базах данных (PostgreSQL) для обеспечения структурированного и безопасного хранения.
+'
+' 1. База данных пациентов: хранит персональные данные, такие как Ф. И. О., дата рождения, контактная информация и медицинские карты.
+' 2. База данных записей: хранит информацию о записях на приёмы.
+' 3. База данных платежей: хранит информацию о проведённых платежах и финансовых транзакциях.
+' 4. База данных анализов: хранит информацию о анализах.
+'
+' Все базы данных размещены на защищённых серверах с ограниченным доступом.
+
+' Конфиденциальные данные подлежат уничтожению в следующих случаях:
+'
+' 1. По истечении 5 лет с момента последней активности пациента (например, последнего визита или запроса).
+' 2. По запросу пациента на удаление его данных, если это не противоречит законодательству.
+'
+' Уничтожение данных осуществляется с использованием методов, обеспечивающих полное удаление информации, таких как:
+' - Физическое уничтожение носителей данных.
+' - Программное уничтожение с использованием сертифицированных программ для удаления данных.
+
+' Для защиты конфиденциальных данных используются следующие меры:
+'
+' 1. Шифрование данных:
+' - Данные шифруются как при хранении, так и при передаче с использованием современных алгоритмов шифрования (например, AES-256).
+'
+' 2. Контроль доступа:
+' - Реализованы механизмы управления доступом (RBAC или ABAC), которые ограничивают доступ к данным только авторизованным пользователям.
+'
+' 3. Аудит и мониторинг:
+' - Ведётся аудит доступа к данным и действий пользователей для выявления несанкционированного доступа и подозрительных действий.
+'
+' 4. Обфускация данных:
+' - В тестовых средах и при обработке данных используются методы обфускации для защиты конфиденциальной информации.
+
+Person(client, "Клиент", "Клиент")
+System_Ext(mobile, "мобильное устройство","мобильное устройство")
+
+System_Boundary(medicalCenter, "Медицинский центр") {
+    Person(receptionist, "Сотрудник ресепшена", "Обрабатывает записи пациентов")
+    Person(doctor, "Врач", "Обрабатывает медицинские данные")
+    Person(accountant, "Бухгалтер", "Обрабатывает платежи")
+    Person(wareManager, "Хоз. менеджер", "Учет ТМЦ")
+    Person(analytic, "Аналитик", "подготовка данных для LLM")
+    Container(clientPortal, "Портал для клиентов", "React.js", "Интерфейс для записи на приёмы и просмотра данных")
+    Container(staffPortal, "Портал для сотрудников", "React.js", "Интерфейс для управления записями и данными пациентов")
+    Container(frontEndClient, "BFF client", "Node.js", "Обработка бизнес-логики и взаимодействие с базами данных")
+    Container(frontEndStaff, "BFF staff", "Node.js", "Обработка бизнес-логики и взаимодействие с базами данных")
+    Container(frontEndMobile, "BFF mobile", "Node.js", "Обработка бизнес-логики и взаимодействие с базами данных")
+    Container(apiGateway, "API Gateway", "nginx", "Обработка бизнес-логики и взаимодействие с базами данных")
+    Container(notify, "Notificator", "Golang", "Уведомления")
+    Container(mail, "Exchange Mail Server", "", "Уведомления почты")
+    Container(1C, "1C бухгалтерия", "", "Бух система учета")
+    Container(1CT, "1C торговля и склад", "", "Складская система учета")
+
+    Container(patientDB, "База данных пациентов", "PostgreSQL", "Хранит персональные данные и медицинские карты")
+    Container(workWithPatientPersonalInfo, "MedCardInfoPatient", "Golang", "Обрабатывает персональные данные и медицинские карты")
+    Container(doctorToPatients, "DoctorToPatients", "Golang", "Обрабатывает записи пациентов к врачам")
+    Container(recordsDB, "База данных записей", "PostgreSQL", "Хранит записи о приёмах к доктору")
+    Container(crmDB, "База данных собранной инфы", "PostgreSQL", "Хранит доп инфо о клиентах")
+    Container(labDB, "База данных анализов", "PostgreSQL", "Хранит записи о анализах")
+    Container(paymentDB, "База данных платежей", "PostgreSQL", "Хранит информацию о платежах")
+    Container(paymentGateway, "MoneyGate", "REST API", "Обработка платежей и сбор данных о клиентах")
+    Container(apacheNifi, "ETL/ELT", "Apache NiFi", "Озеро данных")
+    Container(CRM, "CRM", "", "Сбор информации о клиентах")
+    Container(workWithLab, "WorkWithLab", "Golang", "Запрос\получение результатов анализов")
+}
+
+System_Ext(labAPI, "API лабораторий", "REST API", "Интеграция для получения результатов анализов")
+System_Ext(bankAPI, "API банков", "REST API", "Интеграция для проведения платежей")
+
+Rel(analytic, apacheNifi, "Обработка данных")
+Rel(notify, mail, "Отправка почты")
+Rel(mail, client, "Отправка почты")
+Rel(CRM,crmDB, "хранение инфо")
+Rel(doctorToPatients, notify, "отправка уведомлений")
+Rel(client, mobile, "работа в личном кабинете")
+Rel(mobile, frontEndMobile, "Взаимодействие с бекендом")
+Rel(paymentGateway, paymentDB, "Сохранение информации о платежах")
+Rel(paymentGateway, bankAPI, "Проведение платежей")
+Rel(paymentGateway, 1C, "Проведение платежей")
+Rel(frontEndClient, apiGateway, "Взаимодействие с бекендом")
+Rel(frontEndStaff, apiGateway, "Взаимодействие с бекендом")
+Rel(frontEndMobile, apiGateway, "Взаимодействие с бекендом")
+Rel(workWithLab, labAPI, "Запрос на получение результатов анализов")
+Rel(client, clientPortal, "работа в личном кабинете")
+Rel(clientPortal, frontEndClient, "Запрос на запись")
+Rel(workWithPatientPersonalInfo, patientDB, "Сохранение данных пациента")
+Rel(apiGateway, workWithLab, "Запрос анализов")
+Rel(apiGateway, workWithPatientPersonalInfo, "перс. мед. данные пациентов")
+Rel(apiGateway, paymentGateway, "Проведение платежей")
+Rel(doctorToPatients, recordsDB, "Обновление записей о приёмах")
+Rel(apiGateway, doctorToPatients, "Обновление записей о приёмах")
+Rel(recordsDB, apacheNifi, "Сбор данных")
+Rel(paymentDB, apacheNifi, "Сбор данных")
+Rel(labDB, apacheNifi, "Сбор данных")
+Rel(crmDB, apacheNifi, "Сбор данных")
+Rel(patientDB, apacheNifi, "Сбор данных")
+Rel(receptionist, staffPortal, "Управление записями")
+Rel(staffPortal, frontEndStaff, "Запрос на обновление записей")
+Rel(workWithLab,labDB, "Запись анализов")
+
+Rel(doctor, staffPortal, "Просмотр записей")
+Rel(staffPortal, frontEndStaff, "Запрос на получение записей")
+Rel(recordsDB, doctorToPatients, "Получение записей")
+
+Rel(accountant, 1C, "Обработка платежей")
+Rel(frontEndMobile, mobile, "Web Socket")
+
+Rel(1C, 1CT, "Обмен данными")
+Rel(wareManager, 1CT, "Просмотр состояния")
+
+Rel(apiGateway, CRM, "Отправка данных для аудита")
+
+@enduml
